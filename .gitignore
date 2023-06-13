@@ -1,0 +1,6 @@
+.vscode/*
+data/
+Miniconda3-latest-MacOSX-arm64.sh
+generation.json
+generationb16.json
+try.ipynb
