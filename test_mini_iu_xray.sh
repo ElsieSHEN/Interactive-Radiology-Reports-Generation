@@ -1,0 +1,14 @@
+python3 main_test.py \
+--image_dir data/mini_iu_xray/images/ \
+--ann_path data/mini_iu_xray/mini_annotation.json \
+--dataset_name iu_xray \
+--max_seq_length 20 \
+--threshold 3 \
+--batch_size 1 \
+--epochs 100 \
+--save_dir results/iu_xray \
+--step_size 50 \
+--gamma 0.1 \
+--seed 9223 \
+--load data/model_iu_xray.pth \
+--beam_size 1 \
