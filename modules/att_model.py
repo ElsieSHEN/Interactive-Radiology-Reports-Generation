@@ -134,8 +134,8 @@ class AttModel(CaptionModel):
                 seqLogprobs[k, :seq_len] = self.done_beams[k][0]['logps']
         # return the samples and their log likelihoods
         
-        print("state", state)
-        print("seq", seq)
+        # print("state", state)
+        # print("seq", seq)
         return seq, seqLogprobs
 
     def _sample(self, fc_feats, att_feats, att_masks=None):
@@ -228,12 +228,12 @@ class AttModel(CaptionModel):
             if unfinished.sum() == 0:
                 break
             
-        print("state", state[0])
-        print("seq", seq)
+        # print("state", state[0])
+        # print("seq", seq)
 
-        return seq, seqLogprobs
+        # return seq, seqLogprobs
         # final tokens are seq
-        # return state[0][0], seqLogprobs
+        return state[0][0], seqLogprobs
         
 
     def _diverse_sample(self, fc_feats, att_feats, att_masks=None, opt={}):

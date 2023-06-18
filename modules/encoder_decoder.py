@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import json
 
 from .att_model import pack_wrapper, AttModel
+from .interactive import *
 
 
 def clones(module, N):
@@ -50,51 +51,13 @@ class Transformer(nn.Module):
     def encode(self, src, src_mask):
         return self.encoder(self.src_embed(src), src_mask)
 
-    def idx2token(self, ids):
-        with open("data/vocab/idx2token.json", "r") as fp2:
-            idx2token_dict = json.load(fp2)
-
-        txt = ''
-        for i, idx in enumerate(ids):
-            if idx == 0 and i == 0:
-                pass
-            elif idx == 1:
-                txt = txt.rstrip()
-                txt += idx2token_dict[str(idx)]
-                txt += ' '
-            elif idx > 0:
-                txt += idx2token_dict[str(idx)]
-                txt += ' '
-        return txt
-    
-    def token2idx(self, string):
-        with open("data/vocab/token2idx.json", "r") as fp1:
-            token2idx_dict = json.load(fp1)
-
-        ids = []
-        tokens = string.replace(".", " .").split()
-        for token in tokens:
-            if token != ' ':
-                ids.append(token2idx_dict[token])
-        return ids
     
     def decode(self, hidden_states, src_mask, tgt, tgt_mask):
         memory = self.rm.init_memory(hidden_states.size(0)).to(hidden_states)
         memory = self.rm(self.tgt_embed(tgt), memory)
 
-        if tgt[0][-1] == 1:
-            ids = tgt.numpy()
-            print("sentence you can edit:", self.idx2token(ids[0]))
-            new_string = input("input your new string: ").lower()
-            if len(new_string) == 0:
-                pass
-            else:
-                new_ids = self.token2idx(new_string)
-                # print("new token ids:", new_ids)
-                while len(ids[0]) > len(new_ids):
-                    new_ids.insert(0, 0)
-                ids[0] = new_ids
-                tgt = torch.from_numpy(ids)
+        tgt = length_base(tgt, 5)
+
                 
         # print(tgt)
                 
