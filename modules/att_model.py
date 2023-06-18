@@ -174,6 +174,7 @@ class AttModel(CaptionModel):
 
             logprobs, state = self.get_logprobs_state(it, p_fc_feats, p_att_feats, pp_att_feats, p_att_masks, state,
                                                       output_logsoftmax=output_logsoftmax)
+            # print(torch.max(logprobs.data, 1)) # next token index
 
             if decoding_constraint and t > 0:
                 tmp = logprobs.new_zeros(logprobs.size())
@@ -213,7 +214,7 @@ class AttModel(CaptionModel):
             # sample the next word
             if t == self.max_seq_length:  # skip if we achieve maximum length
                 break
-            it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature)
+            it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature) # it is the index of the next token
 
             # stop when all finished
             if t == 0:

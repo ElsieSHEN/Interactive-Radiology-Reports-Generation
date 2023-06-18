@@ -5,3 +5,4 @@ generation.json
 generationb16.json
 try.ipynb
 __pycache__/
+**/.DS_Store

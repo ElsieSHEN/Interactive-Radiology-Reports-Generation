@@ -81,6 +81,7 @@ class Tester(BaseTester):
                 # reports = self.model.tokenizer.decode_batch(output.cpu().numpy())
                 tokens = output.cpu().numpy()[0]
                 tokens_clean = [i for i in tokens if i != 0]
+                print('final token:', tokens_clean)
                 reports = self.model.tokenizer.decode(tokens_clean)
                 
                 print("final report:", reports)

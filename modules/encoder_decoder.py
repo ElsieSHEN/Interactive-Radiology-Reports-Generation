@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import json
 
 from .att_model import pack_wrapper, AttModel
-from .interactive import *
+from .interactive import Interactive
 
 
 def clones(module, N):
@@ -56,10 +56,9 @@ class Transformer(nn.Module):
         memory = self.rm.init_memory(hidden_states.size(0)).to(hidden_states)
         memory = self.rm(self.tgt_embed(tgt), memory)
 
-        tgt = length_base(tgt, 5)
-
-                
-        # print(tgt)
+        # # interactive: change tgt
+        # interactive = Interactive(mode='sentence', length=None)
+        # tgt = interactive.interactive_tgt(tgt)
                 
         return self.decoder(self.tgt_embed(tgt), hidden_states, src_mask, tgt_mask, memory) # option: change tgt
 
@@ -329,34 +328,6 @@ class EncoderDecoder(AttModel):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         return model
-    
-    def idx2token(self, ids):
-        with open("data/vocab/idx2token.json", "r") as fp2:
-            idx2token_dict = json.load(fp2)
-
-        txt = ''
-        for i, idx in enumerate(ids):
-            if idx == 0 and i == 0:
-                pass
-            elif idx == 1:
-                txt = txt.rstrip()
-                txt += idx2token_dict[str(idx)]
-                txt += ' '
-            elif idx > 0:
-                txt += idx2token_dict[str(idx)]
-                txt += ' '
-        return txt
-    
-    def token2idx(self, string):
-        with open("data/vocab/token2idx.json", "r") as fp1:
-            token2idx_dict = json.load(fp1)
-
-        ids = []
-        tokens = string.replace(".", " .").split()
-        for token in tokens:
-            if token != ' ':
-                ids.append(token2idx_dict[token])
-        return ids
 
     def __init__(self, args, tokenizer):
         super(EncoderDecoder, self).__init__(args, tokenizer)
@@ -420,19 +391,6 @@ class EncoderDecoder(AttModel):
             ys = it.unsqueeze(1)
         else:
             ys = torch.cat([state[0][0], it.unsqueeze(1)], dim=1)
-        
-        # if ys[0][-1] == 1:
-        #     ids = ys.numpy()
-        #     print("sentence you can edit:", self.idx2token(ids[0])) # edit whole text or the single sentence
-        #     new_string = input("input your new string: ")
-        #     if len(new_string) == 0:
-        #         pass
-        #     else:
-        #         new_ids = self.token2idx(new_string)
-        #         while len(ids[0]) > len(new_ids):
-        #             new_ids.insert(0, 0)
-        #         ids[0] = new_ids
-        #         ys = torch.from_numpy(ids)
         
         out = self.model.decode(memory, mask, ys, subsequent_mask(ys.size(1)).to(memory.device))
 
