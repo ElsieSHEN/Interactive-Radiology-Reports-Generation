@@ -47,7 +47,8 @@ def parse_agrs():
     parser.add_argument('--rm_d_model', type=int, default=512, help='the dimension of rm.')
 
     # Sample related
-    parser.add_argument('--sample_method', type=str, default='beam_search', help='the sample methods to sample a report.')
+    # parser.add_argument('--sample_method', type=str, default='beam_search', help='the sample methods to sample a report.')
+    parser.add_argument('--sample_method', type=str, default='greedy', help='the sample methods to sample a report.')
     parser.add_argument('--beam_size', type=int, default=1, help='the beam size when beam searching.')
     parser.add_argument('--temperature', type=float, default=1.0, help='the temperature when sampling.')
     parser.add_argument('--sample_n', type=int, default=1, help='the sample number per image.')

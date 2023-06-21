@@ -362,7 +362,7 @@ class CaptionModel(nn.Module):
 
     def sample_next_word(self, logprobs, sample_method, temperature):
         if sample_method == 'greedy':
-            sampleLogprobs, it = torch.max(logprobs.data, 1)
+            sampleLogprobs, it = torch.max(logprobs.data, 1) # the token with the largest log probability
             it = it.view(-1).long()
         elif sample_method == 'gumbel':  # gumbel softmax
             def sample_gumbel(shape, eps=1e-20):
@@ -396,6 +396,7 @@ class CaptionModel(nn.Module):
                     topk, indices = torch.topk(logprobs, the_k, dim=1)
                     tmp = tmp.scatter(1, indices, topk)
                     logprobs = tmp
+            # beam search
             it = torch.distributions.Categorical(logits=logprobs.detach()).sample()
             sampleLogprobs = logprobs.gather(1, it.unsqueeze(1))  # gather the logprobs at sampled positions
         return it, sampleLogprobs

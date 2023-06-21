@@ -9,6 +9,11 @@ def idx2token(ids):
         idx2token_dict = json.load(fp2)
 
     txt = ''
+    
+    if type(ids) == int:
+        txt = idx2token_dict[str(ids)]
+        return txt
+        
     for i, idx in enumerate(ids):
         if idx == 0 and i == 0:
             pass
@@ -31,6 +36,7 @@ def token2idx(string):
         if token != ' ':
             ids.append(token2idx_dict[token])
     return ids
+
 class Interactive(object):
     def __init__(self, mode, length=None, threshold=None):
         self.length = length
@@ -74,14 +80,19 @@ class Interactive(object):
             tgt == self.length_base(tgt)
         return tgt
     
-    def confidence_base(self, logprobs, state):
-        next_tuple = torch.max(logprobs.data, 1)
-        next_prob = float(torch.exp(next_tuple[0]))
-        next_idx = next_tuple[1]
+    # def interactive_state(self, it, sampleLogprobs, state):
+    #     if self.mode == 'confidence':
+    
+    def confidence_base(self, it, sampleLogprobs, state):
+        next_prob = float(torch.exp(sampleLogprobs))
         
-        if torch.max(logprobs.data, 1) < self.threshold:
-            print('sentence have been generated:', idx2token(state[0].numpy()[0][0]))
-            print("next token is:", idx2token(int(next_idx[0])), '\t', 'token probability is:', next_prob)
+        if next_prob < self.threshold:
+            print('sentence have been generated:', idx2token(state[0][0][0].numpy()))
+            print("next token is:", idx2token(int(it)), '\t', 'token probability is:', next_prob)
             new_token = input("input your new token: ").lower()
-            new_idx = token2idx(new_token)
-        return new_idx, new_token
+            if len(new_token) == 0:
+                pass
+            else:
+                it = torch.tensor([token2idx(new_token)[0]])
+                sampleLogprobs = torch.tensor(np.log(np.array(self.threshold)))
+        return it, sampleLogprobs

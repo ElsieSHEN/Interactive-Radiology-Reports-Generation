@@ -60,8 +60,7 @@ class Transformer(nn.Module):
         # interactive = Interactive(mode='sentence', length=None)
         # tgt = interactive.interactive_tgt(tgt)
                 
-        return self.decoder(self.tgt_embed(tgt), hidden_states, src_mask, tgt_mask, memory) # option: change tgt
-
+        return self.decoder(self.tgt_embed(tgt), hidden_states, src_mask, tgt_mask, memory)
 
 class Encoder(nn.Module):
     def __init__(self, layer, N):

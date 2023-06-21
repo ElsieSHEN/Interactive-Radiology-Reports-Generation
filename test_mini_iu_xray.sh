@@ -12,3 +12,4 @@ python3 main_test.py \
 --seed 9223 \
 --load data/model_iu_xray.pth \
 --beam_size 1 \
+--sample_method 'greedy' \

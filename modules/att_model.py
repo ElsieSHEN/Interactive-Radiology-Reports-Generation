@@ -9,6 +9,7 @@ from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_
 
 import modules.utils as utils
 from modules.caption_model import CaptionModel
+from .interactive import Interactive
 
 
 def sort_pack_padded_sequence(input, lengths):
@@ -86,7 +87,7 @@ class AttModel(CaptionModel):
         # 'it' contains a word index
         xt = self.embed(it)
 
-        output, state = self.core(xt, fc_feats, att_feats, p_att_feats, state, att_masks) # state = tgt
+        output, state = self.core(xt, fc_feats, att_feats, p_att_feats, state, att_masks) # state = ys = tgt
         if output_logsoftmax:
             logprobs = F.log_softmax(self.logit(output), dim=1)
         else:
@@ -141,6 +142,7 @@ class AttModel(CaptionModel):
     def _sample(self, fc_feats, att_feats, att_masks=None):
         opt = self.args.__dict__
         sample_method = opt.get('sample_method', 'greedy')
+        print('Sample method is:', sample_method + ', start generation.')
         beam_size = opt.get('beam_size', 1)
         temperature = opt.get('temperature', 1.0)
         sample_n = int(opt.get('sample_n', 1))
@@ -152,9 +154,9 @@ class AttModel(CaptionModel):
             return self._sample_beam(fc_feats, att_feats, att_masks, opt)
         if group_size > 1:
             return self._diverse_sample(fc_feats, att_feats, att_masks, opt)
-
         batch_size = fc_feats.size(0)
         state = self.init_hidden(batch_size * sample_n)
+        interactive = Interactive(mode='confidence', threshold=0.6) # interaction module
 
         p_fc_feats, p_att_feats, pp_att_feats, p_att_masks = self._prepare_feature(fc_feats, att_feats, att_masks)
 
@@ -174,48 +176,53 @@ class AttModel(CaptionModel):
 
             logprobs, state = self.get_logprobs_state(it, p_fc_feats, p_att_feats, pp_att_feats, p_att_masks, state,
                                                       output_logsoftmax=output_logsoftmax)
-            # print(torch.max(logprobs.data, 1)) # next token index
 
-            if decoding_constraint and t > 0:
-                tmp = logprobs.new_zeros(logprobs.size())
-                tmp.scatter_(1, seq[:, t - 1].data.unsqueeze(1), float('-inf'))
-                logprobs = logprobs + tmp
+            # print(torch.max(logprobs.data, 1)) # next token index, if greedy
+            # print(state) # tgt, last decoder output
 
-            # Mess with trigrams
-            # Copy from https://github.com/lukemelas/image-paragraph-captioning
-            if block_trigrams and t >= 3:
-                # Store trigram generated at last step
-                prev_two_batch = seq[:, t - 3:t - 1]
-                for i in range(batch_size):  # = seq.size(0)
-                    prev_two = (prev_two_batch[i][0].item(), prev_two_batch[i][1].item())
-                    current = seq[i][t - 1]
-                    if t == 3:  # initialize
-                        trigrams.append({prev_two: [current]})  # {LongTensor: list containing 1 int}
-                    elif t > 3:
-                        if prev_two in trigrams[i]:  # add to list
-                            trigrams[i][prev_two].append(current)
-                        else:  # create list
-                            trigrams[i][prev_two] = [current]
-                # Block used trigrams at next step
-                prev_two_batch = seq[:, t - 2:t]
-                # mask = torch.zeros(logprobs.size(), requires_grad=False).cuda()  # batch_size x vocab_size
-                mask = torch.zeros(logprobs.size(), requires_grad=False)  # batch_size x vocab_size -> remove .cuda()
+            # if decoding_constraint and t > 0:
+            #     tmp = logprobs.new_zeros(logprobs.size())
+            #     tmp.scatter_(1, seq[:, t - 1].data.unsqueeze(1), float('-inf'))
+            #     logprobs = logprobs + tmp
+
+            # # Mess with trigrams
+            # # Copy from https://github.com/lukemelas/image-paragraph-captioning
+            # if block_trigrams and t >= 3:
+            #     # Store trigram generated at last step
+            #     prev_two_batch = seq[:, t - 3:t - 1]
+            #     for i in range(batch_size):  # = seq.size(0)
+            #         prev_two = (prev_two_batch[i][0].item(), prev_two_batch[i][1].item())
+            #         current = seq[i][t - 1]
+            #         if t == 3:  # initialize
+            #             trigrams.append({prev_two: [current]})  # {LongTensor: list containing 1 int}
+            #         elif t > 3:
+            #             if prev_two in trigrams[i]:  # add to list
+            #                 trigrams[i][prev_two].append(current)
+            #             else:  # create list
+            #                 trigrams[i][prev_two] = [current]
+            #     # Block used trigrams at next step
+            #     prev_two_batch = seq[:, t - 2:t]
+            #     # mask = torch.zeros(logprobs.size(), requires_grad=False).cuda()  # batch_size x vocab_size
+            #     mask = torch.zeros(logprobs.size(), requires_grad=False)  # batch_size x vocab_size -> remove .cuda()
                 
-                for i in range(batch_size):
-                    prev_two = (prev_two_batch[i][0].item(), prev_two_batch[i][1].item())
-                    if prev_two in trigrams[i]:
-                        for j in trigrams[i][prev_two]:
-                            mask[i, j] += 1
-                # Apply mask to log probs
-                # logprobs = logprobs - (mask * 1e9)
-                alpha = 2.0  # = 4
-                logprobs = logprobs + (mask * -0.693 * alpha)  # ln(1/2) * alpha (alpha -> infty works best)
+            #     for i in range(batch_size):
+            #         prev_two = (prev_two_batch[i][0].item(), prev_two_batch[i][1].item())
+            #         if prev_two in trigrams[i]:
+            #             for j in trigrams[i][prev_two]:
+            #                 mask[i, j] += 1
+            #     # Apply mask to log probs
+            #     # logprobs = logprobs - (mask * 1e9)
+            #     alpha = 2.0  # = 4
+            #     logprobs = logprobs + (mask * -0.693 * alpha)  # ln(1/2) * alpha (alpha -> infty works best)
 
             # sample the next word
             if t == self.max_seq_length:  # skip if we achieve maximum length
                 break
-            it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature) # it is the index of the next token
 
+            it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature) # it -> index of the next token
+            # interactive: modify according to the probability
+            it, sampleLogprobs = interactive.confidence_base(it, sampleLogprobs, state)
+            
             # stop when all finished
             if t == 0:
                 unfinished = it != self.eos_idx
@@ -232,9 +239,9 @@ class AttModel(CaptionModel):
         # print("state", state[0])
         # print("seq", seq)
 
-        # return seq, seqLogprobs
-        # final tokens are seq
-        return state[0][0], seqLogprobs
+        return seq, seqLogprobs
+        # final tokens are seq, state without sample
+        # return state[0][0], seqLogprobs
         
 
     def _diverse_sample(self, fc_feats, att_feats, att_masks=None, opt={}):
