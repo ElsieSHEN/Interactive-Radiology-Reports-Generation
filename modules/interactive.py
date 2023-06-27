@@ -73,11 +73,27 @@ class Interactive(object):
                     tgt = torch.from_numpy(ids)
         return tgt
     
+    def trigger(self, tgt):
+        ids = tgt.numpy()
+        print("current generation:", idx2token(ids[0]))
+        new_last = input("input your new string (if you do not want to change anything, input enter):").lower()
+        if len(new_string) == 0:
+            pass
+        else:
+            new_ids = token2idx(new_string)
+            while len(ids[0]) > len(new_ids):
+                new_ids.insert(0, 0)
+                ids[0] = new_ids
+                tgt = torch.from_numpy(ids)
+        return tgt
+    
     def interactive_tgt(self, tgt):
         if self.mode == 'sentence':
             tgt = self.sentence_base(tgt)
         if self.mode == 'length':
-            tgt == self.length_base(tgt)
+            tgt = self.length_base(tgt)
+        if self.mode == 'trigger':
+            tgt = self.trigger(tgt)
         return tgt
     
     # def interactive_state(self, it, sampleLogprobs, state):
