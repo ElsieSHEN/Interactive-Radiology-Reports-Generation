@@ -245,9 +245,9 @@ class AttModel(CaptionModel):
         print("state", state[0])
         print("seq", seq)
 
-        return seq, seqLogprobs
+        # return seq, seqLogprobs
         # final tokens are seq, state without sample
-        # return state[0][0], seqLogprobs
+        return state[0][0], seqLogprobs
         
 
     def _diverse_sample(self, fc_feats, att_feats, att_masks=None, opt={}):

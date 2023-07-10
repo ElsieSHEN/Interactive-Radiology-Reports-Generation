@@ -47,9 +47,9 @@ def get_args():
     threshold = None
 
     # this method accepts integer and returns integer
-    mode = simpledialog.askstring("Input","Enter interaction mode",parent=window)
+    mode = simpledialog.askstring("Mode","Enter interaction mode",parent=window)
     if mode == 'confidence':
-        threshold = simpledialog.askfloat('Input', 'Set your confidence threshold', parent=window)
+        threshold = simpledialog.askfloat('Threshold', 'Set your confidence threshold', parent=window)
         dialog_output = Label(window, text=f'Interaction mode is {mode}, confidence threshold is {threshold}.',font=('italic 12'))
     elif mode == 'length':
         threshold = simpledialog.askinteger('Length', 'Set your length threshold', parent=window)
@@ -57,9 +57,6 @@ def get_args():
     else:
         dialog_output = Label(window, text=f'Interaction mode is {mode}.',font=('italic 12'))
     dialog_output.pack(pady=20)
-
-    quit_btn = Button(window, text='Quit', command=lambda:window.destroy)
-    quit_btn.pack(expand=True)
     
     print(mode, threshold)
 
@@ -71,9 +68,10 @@ def window(str1, str2):
     window = Tk()
     window.geometry("500x300")
     window.title('Interactive Generation')
-    new_string = simpledialog.askstring(str1, str2)
+    new_string = simpledialog.askstring(str1, str2, parent=window)
+    dialog_output = Label(window, text=f'Edited generation is {new_string}.',font=('italic 12'))
         
-    return new_string.lower()
+    return new_string
     
 class Interactive(object):
     def __init__(self, mode, threshold):
@@ -85,7 +83,7 @@ class Interactive(object):
             ids = tgt.numpy()
             str1 = 'Sentence-based Interaction'
             str2 = 'Sentence you can edit: ' + idx2token(ids[0]) + '\n\nEnter your new sentence: '
-            new_string = window(str1, str2)
+            new_string = window(str1, str2).lower()
             if len(new_string) == 0:
                 pass
             else:
@@ -101,7 +99,7 @@ class Interactive(object):
             ids = tgt.numpy()
             str1 = 'Length-base Interaction'
             str2 = 'Sentence you can edit: ' + idx2token(ids[0]) + '\n\nEnter your new string: '
-            new_string = window(str1, str2)
+            new_string = window(str1, str2).lower()
             if len(new_string) == 0:
                 pass
             else:
@@ -128,9 +126,9 @@ class Interactive(object):
         if next_prob < self.threshold:
             str1 = 'Confidence-based Interaction'
             str2 = 'Sentence have been generated: ' + idx2token(state[0][0][0].numpy()) + \
-                   '\nnext token: ' + idx2token(int(it)) + ',\t' + 'next token probability: ' + str(next_prob) + \
+                   '\nNext token: ' + idx2token(int(it)) + ', Next token probability: ' + str(next_prob) + \
                   '\n\nEnter your next token: '
-            new_token = window(str1, str2)
+            new_token = window(str1, str2).lower()
             if len(new_token) == 0:
                 pass
             else:
