@@ -6,3 +6,4 @@ generationb16.json
 try.ipynb
 __pycache__/
 **/.DS_Store
+run_model_interactive.py

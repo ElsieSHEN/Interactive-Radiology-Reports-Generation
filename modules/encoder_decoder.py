@@ -37,13 +37,15 @@ def subsequent_mask(size):
 
 
 class Transformer(nn.Module):
-    def __init__(self, encoder, decoder, src_embed, tgt_embed, rm):
+    def __init__(self, encoder, decoder, src_embed, tgt_embed, rm, mode, threshold):
         super(Transformer, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.src_embed = src_embed
         self.tgt_embed = tgt_embed
         self.rm = rm
+        self.mode = mode
+        self.threshold = threshold
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         return self.decode(self.encode(src, src_mask), src_mask, tgt, tgt_mask) 
@@ -57,8 +59,9 @@ class Transformer(nn.Module):
         memory = self.rm(self.tgt_embed(tgt), memory)
 
         # # interactive: change tgt
-        # interactive = Interactive(mode='sentence', length=None)
-        # tgt = interactive.interactive_tgt(tgt)
+        if self.mode == 'sentence' or 'length':
+            interactive = Interactive(mode=self.mode, threshold=self.threshold)
+            tgt = interactive.interactive_tgt(tgt)
                 
         return self.decoder(self.tgt_embed(tgt), hidden_states, src_mask, tgt_mask, memory)
 
@@ -322,7 +325,9 @@ class EncoderDecoder(AttModel):
                 self.num_layers),
             lambda x: x,
             nn.Sequential(Embeddings(self.d_model, tgt_vocab), c(position)),
-            rm)
+            rm,
+            self.mode,
+            self.threshold)
         for p in model.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -340,6 +345,8 @@ class EncoderDecoder(AttModel):
         self.rm_num_heads = args.rm_num_heads
         self.rm_d_model = args.rm_d_model
         self.tokenizer = tokenizer
+        self.mode = args.interactive_mode
+        self.threshold = args.interactive_threshold
 
         tgt_vocab = self.vocab_size + 1
 

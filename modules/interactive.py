@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import json
+from tkinter import *
+from tkinter import simpledialog
 
 from .tokenizers import Tokenizer
 
@@ -37,17 +39,53 @@ def token2idx(string):
             ids.append(token2idx_dict[token])
     return ids
 
+def get_args():
+    window = Tk()
+    window.geometry("500x300")
+    window.title("Define Arguments")
+
+    threshold = None
+
+    # this method accepts integer and returns integer
+    mode = simpledialog.askstring("Input","Enter interaction mode",parent=window)
+    if mode == 'confidence':
+        threshold = simpledialog.askfloat('Input', 'Set your confidence threshold', parent=window)
+        dialog_output = Label(window, text=f'Interaction mode is {mode}, confidence threshold is {threshold}.',font=('italic 12'))
+    elif mode == 'length':
+        threshold = simpledialog.askinteger('Length', 'Set your length threshold', parent=window)
+        dialog_output = Label(window, text=f'Interaction mode is {mode}, length threshold is {threshold}.',font=('italic 12'))
+    else:
+        dialog_output = Label(window, text=f'Interaction mode is {mode}.',font=('italic 12'))
+    dialog_output.pack(pady=20)
+
+    quit_btn = Button(window, text='Quit', command=lambda:window.destroy)
+    quit_btn.pack(expand=True)
+    
+    print(mode, threshold)
+
+    # window.mainloop()
+    
+    return mode, threshold
+
+def window(str1, str2):
+    window = Tk()
+    window.geometry("500x300")
+    window.title('Interactive Generation')
+    new_string = simpledialog.askstring(str1, str2)
+        
+    return new_string.lower()
+    
 class Interactive(object):
-    def __init__(self, mode, length=None, threshold=None):
-        self.length = length
+    def __init__(self, mode, threshold):
         self.mode = mode
         self.threshold = threshold
         
     def sentence_base(self, tgt):
         if tgt[0][-1] == 1:
             ids = tgt.numpy()
-            print("sentence you can edit:", idx2token(ids[0]))
-            new_string = input("input your new string: ").lower()
+            str1 = 'Sentence-based Interaction'
+            str2 = 'Sentence you can edit: ' + idx2token(ids[0]) + '\n\nEnter your new sentence: '
+            new_string = window(str1, str2)
             if len(new_string) == 0:
                 pass
             else:
@@ -59,10 +97,11 @@ class Interactive(object):
         return tgt
 
     def length_base(self, tgt):
-        if len(tgt[0]) % self.length == 1 and len(tgt[0]) > 1:
+        if len(tgt[0]) % self.threshold == 1 and len(tgt[0]) > 1:
             ids = tgt.numpy()
-            print("sentence you can edit:", idx2token(ids[0]))
-            new_string = input("input your new string: ").lower()
+            str1 = 'Length-base Interaction'
+            str2 = 'Sentence you can edit: ' + idx2token(ids[0]) + '\n\nEnter your new string: '
+            new_string = window(str1, str2)
             if len(new_string) == 0:
                 pass
             else:
@@ -73,27 +112,11 @@ class Interactive(object):
                     tgt = torch.from_numpy(ids)
         return tgt
     
-    def trigger(self, tgt):
-        ids = tgt.numpy()
-        print("current generation:", idx2token(ids[0]))
-        new_last = input("input your new string (if you do not want to change anything, input enter):").lower()
-        if len(new_string) == 0:
-            pass
-        else:
-            new_ids = token2idx(new_string)
-            while len(ids[0]) > len(new_ids):
-                new_ids.insert(0, 0)
-                ids[0] = new_ids
-                tgt = torch.from_numpy(ids)
-        return tgt
-    
     def interactive_tgt(self, tgt):
         if self.mode == 'sentence':
             tgt = self.sentence_base(tgt)
         if self.mode == 'length':
             tgt = self.length_base(tgt)
-        if self.mode == 'trigger':
-            tgt = self.trigger(tgt)
         return tgt
     
     # def interactive_state(self, it, sampleLogprobs, state):
@@ -103,12 +126,16 @@ class Interactive(object):
         next_prob = float(torch.exp(sampleLogprobs))
         
         if next_prob < self.threshold:
-            print('sentence have been generated:', idx2token(state[0][0][0].numpy()))
-            print("next token is:", idx2token(int(it)), '\t', 'token probability is:', next_prob)
-            new_token = input("input your new token: ").lower()
+            str1 = 'Confidence-based Interaction'
+            str2 = 'Sentence have been generated: ' + idx2token(state[0][0][0].numpy()) + \
+                   '\nnext token: ' + idx2token(int(it)) + ',\t' + 'next token probability: ' + str(next_prob) + \
+                  '\n\nEnter your next token: '
+            new_token = window(str1, str2)
             if len(new_token) == 0:
                 pass
             else:
                 it = torch.tensor([token2idx(new_token)[0]])
                 sampleLogprobs = torch.tensor(np.log(np.array(self.threshold)))
         return it, sampleLogprobs
+    
+    

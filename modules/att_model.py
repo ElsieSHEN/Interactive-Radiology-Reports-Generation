@@ -53,6 +53,8 @@ class AttModel(CaptionModel):
         self.pad_idx = args.pad_idx
 
         self.use_bn = args.use_bn
+        self.mode = args.interactive_mode
+        self.threshold = args.interactive_threshold
 
         self.embed = lambda x: x
         self.fc_embed = lambda x: x
@@ -156,7 +158,8 @@ class AttModel(CaptionModel):
             return self._diverse_sample(fc_feats, att_feats, att_masks, opt)
         batch_size = fc_feats.size(0)
         state = self.init_hidden(batch_size * sample_n)
-        interactive = Interactive(mode='confidence', threshold=0.6) # interaction module
+
+
 
         p_fc_feats, p_att_feats, pp_att_feats, p_att_masks = self._prepare_feature(fc_feats, att_feats, att_masks)
 
@@ -220,8 +223,11 @@ class AttModel(CaptionModel):
                 break
 
             it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature) # it -> index of the next token
+            
             # interactive: modify according to the probability
-            it, sampleLogprobs = interactive.confidence_base(it, sampleLogprobs, state)
+            if self.mode == 'confidence':
+                interactive = Interactive(mode=self.mode, threshold=self.threshold) # interaction module
+                it, sampleLogprobs = interactive.confidence_base(it, sampleLogprobs, state)
             
             # stop when all finished
             if t == 0:
@@ -236,8 +242,8 @@ class AttModel(CaptionModel):
             if unfinished.sum() == 0:
                 break
             
-        # print("state", state[0])
-        # print("seq", seq)
+        print("state", state[0])
+        print("seq", seq)
 
         return seq, seqLogprobs
         # final tokens are seq, state without sample

@@ -7,6 +7,7 @@ from modules.metrics import compute_scores
 from modules.tester import Tester
 from modules.loss import compute_loss
 from models.r2gen import R2GenModel
+from modules.interactive import get_args
 
 
 def parse_agrs():
@@ -83,6 +84,10 @@ def parse_agrs():
     parser.add_argument('--seed', type=int, default=9233, help='.')
     parser.add_argument('--resume', type=str, help='whether to resume the training from existing checkpoints.')
     parser.add_argument('--load', type=str, default='data/model_iu_xray.pth', help='whether to load a pre-trained model.')
+    
+    mode, threshold = get_args()
+    parser.add_argument('--interactive_mode', type=str, default=mode, help='the method used for interaction.')
+    parser.add_argument('--interactive_threshold', type=str, default=threshold, help='the method used for interaction.')
 
     args = parser.parse_args()
     return args
