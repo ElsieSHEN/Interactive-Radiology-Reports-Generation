@@ -14,7 +14,7 @@ def compute_scores(gts, res):
 
     # Set up scorers
     scorers = [
-        # (Bleu(4), ["BLEU_1", "BLEU_2", "BLEU_3", "BLEU_4"]),
+        (Bleu(4), ["BLEU_1", "BLEU_2", "BLEU_3", "BLEU_4"]),
         (Meteor(), "METEOR"),
         (Rouge(), "ROUGE_L")
     ]
@@ -22,7 +22,7 @@ def compute_scores(gts, res):
     # Compute score for each metric
     for scorer, method in scorers:
         try:
-            score, scores = scorer.compute_score(gts, res) # compute_score() got an unexpected keyword argument 'verbose' -> remove 'verbose'
+            score, scores = scorer.compute_score(gts, res, verbose=0)
         except TypeError:
             score, scores = scorer.compute_score(gts, res)
         if type(method) == list:

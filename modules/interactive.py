@@ -90,8 +90,8 @@ class Interactive(object):
                 new_ids = token2idx(new_string)
                 while len(ids[0]) > len(new_ids):
                     new_ids.insert(0, 0)
-                    ids[0] = new_ids
-                    tgt = torch.from_numpy(ids)
+                ids[0] = new_ids
+                tgt = torch.from_numpy(ids)
         return tgt
 
     def length_base(self, tgt):
@@ -106,8 +106,8 @@ class Interactive(object):
                 new_ids = token2idx(new_string)
                 while len(ids[0]) > len(new_ids):
                     new_ids.insert(0, 0)
-                    ids[0] = new_ids
-                    tgt = torch.from_numpy(ids)
+                ids[0] = new_ids
+                tgt = torch.from_numpy(ids)
         return tgt
     
     def interactive_tgt(self, tgt):

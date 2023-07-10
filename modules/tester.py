@@ -5,6 +5,7 @@ import json
 
 import cv2
 import torch
+from nltk.translate.bleu_score import sentence_bleu
 
 from modules.utils import generate_heatmap
 
@@ -85,23 +86,30 @@ class Tester(BaseTester):
                 reports = self.model.tokenizer.decode(tokens_clean)
                 
                 print("final report:", reports)
-                # ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
+                ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
                 
-                #test_res.extend(reports)
-                #test_gts.extend(ground_truths)
+                test_res.extend([reports])
+                test_gts.extend(ground_truths)
                 
-        #         for i in range(len(images_id)):
-        #             save_info[str(images_id[i])] = {}
-        #             save_info[str(images_id[i])]['test'] = reports[i]
-        #             save_info[str(images_id[i])]['gt'] = ground_truths[i]
+                for i in range(len(images_id)):
+                    save_info[str(images_id[i])] = {}
+                    save_info[str(images_id[i])]['test'] = reports[i]
+                    save_info[str(images_id[i])]['gt'] = ground_truths[i]
                 
-        # with open("generation.json", "w") as outfile:
-        #      json.dump(save_info, outfile)
+
             # print("start evaluation")
             # test_met = self.metric_ftns({i: [gt] for i, gt in enumerate(test_gts)},
             #                             {i: [re] for i, re in enumerate(test_res)})
             # log.update(**{'test_' + k: v for k, v in test_met.items()})
             # print(log)
+            bleu_score = sentence_bleu(test_gts[0].split(), test_res[0].split())
+            print(test_gts)
+            print(test_res)
+            print('bleu_score -> {}'.format(bleu_score))
+            
+        # with open("generation.json", "w") as outfile:
+        #     json.dump(save_info, outfile)
+            
             
         return log
 
