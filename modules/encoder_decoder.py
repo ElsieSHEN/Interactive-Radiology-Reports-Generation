@@ -58,10 +58,10 @@ class Transformer(nn.Module):
         memory = self.rm.init_memory(hidden_states.size(0)).to(hidden_states)
         memory = self.rm(self.tgt_embed(tgt), memory)
 
-        # # interactive: change tgt
-        if self.mode == 'sentence' or 'length':
-            interactive = Interactive(mode=self.mode, threshold=self.threshold)
-            tgt = interactive.interactive_tgt(tgt)
+        # interactive: change tgt
+        # if self.mode == 'sentence' or 'length':
+        #     interactive = Interactive(mode=self.mode, threshold=self.threshold)
+        #     tgt, tgt_mask = interactive.interactive_tgt(tgt)
                 
         return self.decoder(self.tgt_embed(tgt), hidden_states, src_mask, tgt_mask, memory)
 
@@ -392,12 +392,16 @@ class EncoderDecoder(AttModel):
         return outputs
 
     def core(self, it, fc_feats_ph, att_feats_ph, memory, state, mask):
-        # print('core') # option: change it
         if len(state) == 0:
             ys = it.unsqueeze(1)
         else:
             ys = torch.cat([state[0][0], it.unsqueeze(1)], dim=1)
+            
+        if self.mode == 'sentence' or 'length':
+            interactive = Interactive(mode=self.mode, threshold=self.threshold)
+            ys = interactive.interactive_tgt(ys)
         
+        # decode(hidden_states, src_mask, tgt, tgt_mask)
         out = self.model.decode(memory, mask, ys, subsequent_mask(ys.size(1)).to(memory.device))
 
         # return (output, state)

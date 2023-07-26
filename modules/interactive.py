@@ -88,10 +88,17 @@ class Interactive(object):
                 pass
             else:
                 new_ids = token2idx(new_string)
-                while len(ids[0]) > len(new_ids):
-                    new_ids.insert(0, 0)
-                ids[0] = new_ids
+                ids = np.array([new_ids])
                 tgt = torch.from_numpy(ids)
+        return tgt
+    
+    def auto_sentence(self, tgt, gt):
+        if tgt[0][-1] == 1 and tgt[0].count(1) == 1:
+            ids = tgt.numpy()
+            new_string = gt.split('.')[0]
+            new_ids = token2idx(new_string)
+            ids = np.array([new_ids])
+            tgt = torch.from_numpy(ids)
         return tgt
 
     def length_base(self, tgt):
@@ -104,9 +111,7 @@ class Interactive(object):
                 pass
             else:
                 new_ids = token2idx(new_string)
-                while len(ids[0]) > len(new_ids):
-                    new_ids.insert(0, 0)
-                ids[0] = new_ids
+                ids = np.array([new_ids])
                 tgt = torch.from_numpy(ids)
         return tgt
     
@@ -117,9 +122,6 @@ class Interactive(object):
             tgt = self.length_base(tgt)
         return tgt
     
-    # def interactive_state(self, it, sampleLogprobs, state):
-    #     if self.mode == 'confidence':
-    
     def confidence_base(self, it, sampleLogprobs, state):
         next_prob = float(torch.exp(sampleLogprobs))
         
@@ -127,13 +129,15 @@ class Interactive(object):
             str1 = 'Confidence-based Interaction'
             str2 = 'Sentence have been generated: ' + idx2token(state[0][0][0].numpy()) + \
                    '\nNext token: ' + idx2token(int(it)) + ', Next token probability: ' + str(next_prob) + \
-                  '\n\nEnter your next token: '
-            new_token = window(str1, str2).lower()
-            if len(new_token) == 0:
+                  '\n\nEnter your new string: '
+            new_string = window(str1, str2).lower()
+            if len(new_string) == 0:
                 pass
             else:
-                it = torch.tensor([token2idx(new_token)[0]])
-                sampleLogprobs = torch.tensor(np.log(np.array(self.threshold)))
-        return it, sampleLogprobs
-    
-    
+                new_ids = token2idx(new_string)
+                # it = torch.tensor([token2idx(new_token)[-1]])
+                it = torch.tensor([new_ids[-1]])
+                # sampleLogprobs = torch.tensor(np.log(np.array(self.threshold)))
+                state = [torch.tensor([[new_ids]])]
+
+        return it, state

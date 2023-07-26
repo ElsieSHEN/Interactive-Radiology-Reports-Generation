@@ -14,12 +14,12 @@ def parse_agrs():
     parser = argparse.ArgumentParser()
 
     # Data input settings
-    parser.add_argument('--image_dir', type=str, default='data/mini_iu_xray/images/', help='the path to the directory containing the data.')
-    parser.add_argument('--ann_path', type=str, default='data/mini_iu_xray/mini_annotation.json', help='the path to the directory containing the data.')
+    parser.add_argument('--image_dir', type=str, default='data/iu_xray/images/', help='the path to the directory containing the data.')
+    parser.add_argument('--ann_path', type=str, default='data/iu_xray/annotation.json', help='the path to the directory containing the data.')
 
     # Data loader settings
     parser.add_argument('--dataset_name', type=str, default='iu_xray', choices=['iu_xray', 'mimic_cxr'], help='the dataset to be used.')
-    parser.add_argument('--max_seq_length', type=int, default=20, help='the maximum sequence length of the reports.')
+    parser.add_argument('--max_seq_length', type=int, default=60, help='the maximum sequence length of the reports.')
     parser.add_argument('--threshold', type=int, default=3, help='the cut off frequency for the words.')
     parser.add_argument('--num_workers', type=int, default=2, help='the number of workers for dataloader.')
     parser.add_argument('--batch_size', type=int, default=1, help='the number of samples for a batch')
@@ -85,9 +85,9 @@ def parse_agrs():
     parser.add_argument('--resume', type=str, help='whether to resume the training from existing checkpoints.')
     parser.add_argument('--load', type=str, default='data/model_iu_xray.pth', help='whether to load a pre-trained model.')
     
-    mode, threshold = get_args()
-    parser.add_argument('--interactive_mode', type=str, default=mode, help='the method used for interaction.')
-    parser.add_argument('--interactive_threshold', type=str, default=threshold, help='the method used for interaction.')
+    # mode, threshold = get_args()
+    parser.add_argument('--interactive_mode', type=str, default=None, help='the method used for interaction.')
+    parser.add_argument('--interactive_threshold', type=str, default=None, help='the method used for interaction.')
 
     args = parser.parse_args()
     return args

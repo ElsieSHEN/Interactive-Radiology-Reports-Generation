@@ -2,6 +2,7 @@ import logging
 import os
 from abc import abstractmethod
 import json
+import pickle
 
 import cv2
 import torch
@@ -72,6 +73,7 @@ class Tester(BaseTester):
         log = dict()
         self.model.eval()
         save_info = {}
+        bleu = 0
         with torch.no_grad():
             test_gts, test_res = [], []
             for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(self.test_dataloader):
@@ -82,10 +84,10 @@ class Tester(BaseTester):
                 # reports = self.model.tokenizer.decode_batch(output.cpu().numpy())
                 tokens = output.cpu().numpy()[0]
                 tokens_clean = [i for i in tokens if i != 0]
-                print('final token:', tokens_clean)
+                # print('final token:', tokens_clean)
                 reports = self.model.tokenizer.decode(tokens_clean)
                 
-                print("final report:", reports)
+                # print("final report:", reports)
                 ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
                 
                 test_res.extend([reports])
@@ -93,22 +95,21 @@ class Tester(BaseTester):
                 
                 for i in range(len(images_id)):
                     save_info[str(images_id[i])] = {}
-                    save_info[str(images_id[i])]['test'] = reports[i]
+                    save_info[str(images_id[i])]['test'] = [reports][i]
                     save_info[str(images_id[i])]['gt'] = ground_truths[i]
+                    bleu_score = sentence_bleu([ground_truths[i].split()], [reports][i].split(), weights=(1,0,0,0))
+                    # print(bleu_score)
+                    save_info[str(images_id[i])]['bleu 1'] = bleu_score
+                    bleu += bleu_score
                 
-
-            # print("start evaluation")
-            # test_met = self.metric_ftns({i: [gt] for i, gt in enumerate(test_gts)},
-            #                             {i: [re] for i, re in enumerate(test_res)})
-            # log.update(**{'test_' + k: v for k, v in test_met.items()})
-            # print(log)
-            bleu_score = sentence_bleu(test_gts[0].split(), test_res[0].split())
-            print(test_gts)
-            print(test_res)
-            print('bleu_score -> {}'.format(bleu_score))
+            # bleu = 0
+            # for i in range(len(test_gts)):
+            #     bleu_score = sentence_bleu([test_gts[i].split()], test_res[i].split())
+            #     bleu += bleu_score
+            bleu = bleu / len(test_gts)
+            print('bleu_score -> {}'.format(bleu))
             
-        # with open("generation.json", "w") as outfile:
-        #     json.dump(save_info, outfile)
+            pickle.dump(save_info, open("test_generation.pkl", "wb"))
             
             
         return log

@@ -144,7 +144,7 @@ class AttModel(CaptionModel):
     def _sample(self, fc_feats, att_feats, att_masks=None):
         opt = self.args.__dict__
         sample_method = opt.get('sample_method', 'greedy')
-        print('Sample method is:', sample_method + ', start generation.')
+        # print('Sample method is:', sample_method + ', start generation.')
         beam_size = opt.get('beam_size', 1)
         temperature = opt.get('temperature', 1.0)
         sample_n = int(opt.get('sample_n', 1))
@@ -227,7 +227,7 @@ class AttModel(CaptionModel):
             # interactive: modify according to the probability
             if self.mode == 'confidence':
                 interactive = Interactive(mode=self.mode, threshold=self.threshold) # interaction module
-                it, sampleLogprobs = interactive.confidence_base(it, sampleLogprobs, state)
+                it, state = interactive.confidence_base(it, sampleLogprobs, state)
             
             # stop when all finished
             if t == 0:
@@ -242,8 +242,8 @@ class AttModel(CaptionModel):
             if unfinished.sum() == 0:
                 break
             
-        print("state", state[0])
-        print("seq", seq)
+        # print("state", state[0])
+        # print("seq", seq)
 
         # return seq, seqLogprobs
         # final tokens are seq, state without sample

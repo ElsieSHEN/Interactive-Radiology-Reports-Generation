@@ -32,6 +32,8 @@ class R2GenModel(nn.Module):
             output = self.encoder_decoder(fc_feats, att_feats, targets, mode='forward')
         elif mode == 'sample':
             output, _ = self.encoder_decoder(fc_feats, att_feats, mode='sample')
+        elif mode == 'interactive':
+            output, _ = self.encoder_decoder(fc_feats, att_feats, targets, mode='interactive')
         else:
             raise ValueError
         return output
