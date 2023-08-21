@@ -397,9 +397,9 @@ class EncoderDecoder(AttModel):
         else:
             ys = torch.cat([state[0][0], it.unsqueeze(1)], dim=1)
             
-        # if self.mode == 'sentence' or 'length':
-        #     interactive = Interactive(mode=self.mode, threshold=self.threshold)
-        #     ys = interactive.interactive_tgt(ys)
+        if self.mode == 'sentence' or 'length':
+            interactive = Interactive(mode=self.mode, threshold=self.threshold)
+            ys = interactive.interactive_tgt(ys)
         
         # decode(hidden_states, src_mask, tgt, tgt_mask)
         out = self.model.decode(memory, mask, ys, subsequent_mask(ys.size(1)).to(memory.device))

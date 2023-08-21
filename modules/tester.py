@@ -3,13 +3,12 @@ import os
 from abc import abstractmethod
 import json
 import pickle
-from tqdm import tqdm
+
 import cv2
 import torch
 from nltk.translate.bleu_score import sentence_bleu
 
 from modules.utils import generate_heatmap
-from modules.metrics import compute_scores
 
 
 class BaseTester(object):
@@ -68,26 +67,26 @@ class Tester(BaseTester):
     def __init__(self, model, criterion, metric_ftns, args, test_dataloader):
         super(Tester, self).__init__(model, criterion, metric_ftns, args)
         self.test_dataloader = test_dataloader
-        self.mode = args.interactive_mode
-        self.threshold = args.interactive_threshold
 
     def test(self):
         self.logger.info('Start to evaluate in the test set.')
-        performance = dict()
+        log = dict()
         self.model.eval()
         save_info = {}
+        bleu = 0
         with torch.no_grad():
             test_gts, test_res = [], []
-            for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(tqdm(self.test_dataloader)):
+            for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(self.test_dataloader):
                 images, reports_ids, reports_masks = images.to(self.device), reports_ids.to(
                     self.device), reports_masks.to(self.device)
-                output = self.model(images, reports_ids, mode='interactive') # whole text already generated here
+                output = self.model(images, mode='sample') # whole text already generated here
                 # print("final tokens:", output)
                 # reports = self.model.tokenizer.decode_batch(output.cpu().numpy())
                 tokens = output.cpu().numpy()[0]
                 tokens_clean = [i for i in tokens if i != 0]
                 # print('final token:', tokens_clean)
                 reports = self.model.tokenizer.decode(tokens_clean)
+                
                 # print("final report:", reports)
                 ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
                 
@@ -98,16 +97,22 @@ class Tester(BaseTester):
                     save_info[str(images_id[i])] = {}
                     save_info[str(images_id[i])]['test'] = [reports][i]
                     save_info[str(images_id[i])]['gt'] = ground_truths[i]
-
-            # pickle.dump(save_info, open("baseline_generation.pkl", "wb"))
-            # json.dump(save_info, open('autosentence_generation.json', 'w'), indent=4)
-            json.dump(save_info, open('autolen7_generation.json', 'w'), indent=4)
+                    bleu_score = sentence_bleu([ground_truths[i].split()], [reports][i].split(), weights=(1,0,0,0))
+                    # print(bleu_score)
+                    save_info[str(images_id[i])]['bleu 1'] = bleu_score
+                    bleu += bleu_score
+                
+            # bleu = 0
+            # for i in range(len(test_gts)):
+            #     bleu_score = sentence_bleu([test_gts[i].split()], test_res[i].split())
+            #     bleu += bleu_score
+            bleu = bleu / len(test_gts)
+            print('bleu_score -> {}'.format(bleu))
             
-            scores = compute_scores(test_gts, test_res, self.mode, self.threshold)
-            performance.update(scores)
-            print(scores)
+            pickle.dump(save_info, open("test_generation.pkl", "wb"))
             
-        return performance
+            
+        return log
 
     def plot(self):
         assert self.args.batch_size == 1 and self.args.beam_size == 1

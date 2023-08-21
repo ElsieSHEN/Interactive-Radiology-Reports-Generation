@@ -78,52 +78,49 @@ class Interactive(object):
         self.mode = mode
         self.threshold = threshold
         
-    def sentence_base(self, it, state, auto_eval, targets, flag_edit):
-        curr_gen = state[0].reshape(-1)
-        if curr_gen[-1] == 1:
-            if auto_eval == False:
-                ids = curr_gen.numpy()
-                str1 = 'Sentence-based Interaction'
-                str2 = 'Sentence you can edit: ' + idx2token(ids) + '\n\nEnter your new sentence: '
-                new_string = window(str1, str2).lower()
-                if len(new_string) == 0:
-                    pass
-                else:
-                    new_ids = token2idx(new_string)
-                    it = torch.tensor([new_ids[-1]])
-                    state = [torch.tensor([[new_ids]])]
-            elif auto_eval == True and flag_edit == False:
-                ids = targets[0].tolist()
-                end_idx = ids.index(1)
-                new_ids = ids[:end_idx]
-                it = torch.tensor([new_ids[-1]])
-                state = [torch.tensor([[new_ids]])]
-                flag_edit = True
-                # print('auto-edit', state)
-        return it, state, flag_edit
+    def sentence_base(self, tgt):
+        if tgt[0][-1] == 1:
+            ids = tgt.numpy()
+            str1 = 'Sentence-based Interaction'
+            str2 = 'Sentence you can edit: ' + idx2token(ids[0]) + '\n\nEnter your new sentence: '
+            new_string = window(str1, str2).lower()
+            if len(new_string) == 0:
+                pass
+            else:
+                new_ids = token2idx(new_string)
+                ids = np.array([new_ids])
+                tgt = torch.from_numpy(ids)
+        return tgt
     
-    def length_base(self, it, state, auto_eval, targets, flag_edit):
-        curr_gen = state[0].reshape(-1)
-        if len(curr_gen) % self.threshold == 1 and len(curr_gen) > 1:
-            if auto_eval == False:
-                ids = curr_gen.numpy()
-                str1 = 'Length-base Interaction'
-                str2 = 'Sentence you can edit: ' + idx2token(ids) + '\n\nEnter your new string: '
-                new_string = window(str1, str2).lower()
-                if len(new_string) == 0:
-                    pass
-                else:
-                    new_ids = token2idx(new_string)
-                    it = torch.tensor([new_ids[-1]])
-                    state = [torch.tensor([[new_ids]])]
-            elif auto_eval == True and flag_edit == False:
-                ids = targets[0].tolist()
-                new_ids = ids[:self.threshold]
-                it = torch.tensor([new_ids[-1]])
-                state = [torch.tensor([[new_ids]])]
-                flag_edit = True
-                # print('auto-edit', state)
-        return it, state, flag_edit
+    def auto_sentence(self, tgt, gt):
+        if tgt[0][-1] == 1 and tgt[0].count(1) == 1:
+            ids = tgt.numpy()
+            new_string = gt.split('.')[0]
+            new_ids = token2idx(new_string)
+            ids = np.array([new_ids])
+            tgt = torch.from_numpy(ids)
+        return tgt
+
+    def length_base(self, tgt):
+        if len(tgt[0]) % self.threshold == 1 and len(tgt[0]) > 1:
+            ids = tgt.numpy()
+            str1 = 'Length-base Interaction'
+            str2 = 'Sentence you can edit: ' + idx2token(ids[0]) + '\n\nEnter your new string: '
+            new_string = window(str1, str2).lower()
+            if len(new_string) == 0:
+                pass
+            else:
+                new_ids = token2idx(new_string)
+                ids = np.array([new_ids])
+                tgt = torch.from_numpy(ids)
+        return tgt
+    
+    def interactive_tgt(self, tgt):
+        if self.mode == 'sentence':
+            tgt = self.sentence_base(tgt)
+        if self.mode == 'length':
+            tgt = self.length_base(tgt)
+        return tgt
     
     def confidence_base(self, it, sampleLogprobs, state):
         next_prob = float(torch.exp(sampleLogprobs))

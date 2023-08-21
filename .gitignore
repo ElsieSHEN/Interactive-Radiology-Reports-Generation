@@ -8,5 +8,3 @@ __pycache__/
 **/.DS_Store
 run_model_interactive.py
 metrics_mine.py
-*.json
-*.pkl
