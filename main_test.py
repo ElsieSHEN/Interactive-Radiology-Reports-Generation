@@ -85,9 +85,11 @@ def parse_agrs():
     parser.add_argument('--resume', type=str, help='whether to resume the training from existing checkpoints.')
     parser.add_argument('--load', type=str, default='data/model_iu_xray.pth', help='whether to load a pre-trained model.')
     
-    # mode, threshold = get_args()
-    parser.add_argument('--interactive_mode', type=str, default=None, help='the method used for interaction.')
-    parser.add_argument('--interactive_threshold', type=str, default=None, help='the method used for interaction.')
+    # mode, threshold = get_args() # use GUI to get args
+    parser.add_argument('--interactive_mode', type=str, default='length', help='the method used for interaction.')
+    parser.add_argument('--interactive_threshold', type=str, default=7, help='the method used for interaction.')
+    parser.add_argument('--auto_eval', type=bool, default=True , help='whether to use auto evaluation.')
+    
 
     args = parser.parse_args()
     return args

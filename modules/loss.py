@@ -15,7 +15,6 @@ class LanguageModelCriterion(nn.Module):
 
         return output
 
-
 def compute_loss(output, reports_ids, reports_masks):
     criterion = LanguageModelCriterion()
     loss = criterion(output, reports_ids[:, 1:], reports_masks[:, 1:]).mean()
