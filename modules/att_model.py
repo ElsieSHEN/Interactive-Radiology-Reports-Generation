@@ -55,6 +55,7 @@ class AttModel(CaptionModel):
         self.use_bn = args.use_bn
         self.mode = args.interactive_mode
         self.threshold = args.interactive_threshold
+        self.auto_eval = args.auto_eval
 
         self.embed = lambda x: x
         self.fc_embed = lambda x: x
@@ -141,7 +142,7 @@ class AttModel(CaptionModel):
         # print("seq", seq)
         return seq, seqLogprobs
 
-    def _sample(self, fc_feats, att_feats, att_masks=None):
+    def _sample(self, fc_feats, att_feats, att_masks=None): # do _interactive(xx,xx,xx, targets)
         opt = self.args.__dict__
         sample_method = opt.get('sample_method', 'greedy')
         # print('Sample method is:', sample_method + ', start generation.')
@@ -224,11 +225,6 @@ class AttModel(CaptionModel):
 
             it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature) # it -> index of the next token
             
-            # interactive: modify according to the probability
-            if self.mode == 'confidence':
-                interactive = Interactive(mode=self.mode, threshold=self.threshold) # interaction module
-                it, state = interactive.confidence_base(it, sampleLogprobs, state)
-            
             # stop when all finished
             if t == 0:
                 unfinished = it != self.eos_idx
@@ -243,6 +239,82 @@ class AttModel(CaptionModel):
                 break
             
         # print("state", state[0])
+        # print("seq", seq)
+
+        return seq, seqLogprobs
+        # final tokens are seq, state without sample
+        # return state[0][0], seqLogprobs
+    
+    def _interactive(self, fc_feats, att_feats, targets, att_masks=None): # do _interactive(xx,xx,xx, targets)
+        opt = self.args.__dict__
+        sample_method = opt.get('sample_method', 'greedy')
+        # print('Sample method is:', sample_method + ', start generation.')
+        beam_size = opt.get('beam_size', 1)
+        temperature = opt.get('temperature', 1.0)
+        sample_n = int(opt.get('sample_n', 1))
+        group_size = opt.get('group_size', 1)
+        output_logsoftmax = opt.get('output_logsoftmax', 1)
+        decoding_constraint = opt.get('decoding_constraint', 0)
+        block_trigrams = opt.get('block_trigrams', 0)
+        if beam_size > 1 and sample_method in ['greedy', 'beam_search']:
+            return self._sample_beam(fc_feats, att_feats, att_masks, opt)
+        if group_size > 1:
+            return self._diverse_sample(fc_feats, att_feats, att_masks, opt)
+        batch_size = fc_feats.size(0)
+        state = self.init_hidden(batch_size * sample_n)
+        flag_edit = False
+
+
+        p_fc_feats, p_att_feats, pp_att_feats, p_att_masks = self._prepare_feature(fc_feats, att_feats, att_masks)
+
+        if sample_n > 1:
+            p_fc_feats, p_att_feats, pp_att_feats, p_att_masks = utils.repeat_tensors(sample_n,
+                                                                                      [p_fc_feats, p_att_feats,
+                                                                                       pp_att_feats, p_att_masks]
+                                                                                      )
+
+        trigrams = []  # will be a list of batch_size dictionaries
+
+        seq = fc_feats.new_full((batch_size * sample_n, self.max_seq_length), self.pad_idx, dtype=torch.long)
+        seqLogprobs = fc_feats.new_zeros(batch_size * sample_n, self.max_seq_length, self.vocab_size + 1)
+        for t in range(self.max_seq_length + 1):
+            if t == 0:  # input <bos>
+                it = fc_feats.new_full([batch_size * sample_n], self.bos_idx, dtype=torch.long)
+
+            logprobs, state = self.get_logprobs_state(it, p_fc_feats, p_att_feats, pp_att_feats, p_att_masks, state,
+                                                      output_logsoftmax=output_logsoftmax)
+
+            # sample the next word
+            if t == self.max_seq_length:  # skip if we achieve maximum length
+                break
+
+            it, sampleLogprobs = self.sample_next_word(logprobs, sample_method, temperature) # it -> index of the next token
+            
+            # interactive: modify according to the probability
+            if self.mode == 'confidence':
+                interactive = Interactive(mode=self.mode, threshold=self.threshold) # interaction module
+                it, state = interactive.confidence_base(it, sampleLogprobs, state)
+            if self.mode == 'sentence':
+                interactive = Interactive(mode=self.mode, threshold=self.threshold)
+                it, state, flag_edit = interactive.sentence_base(it, state, self.auto_eval, targets, flag_edit)
+            if self.mode == 'length':
+                interactive = Interactive(mode=self.mode, threshold=self.threshold)
+                it, state, flag_edit = interactive.length_base(it, state, self.auto_eval, targets, flag_edit)
+            # stop when all finished
+            if t == 0:
+                unfinished = it != self.eos_idx
+            else:
+                it[~unfinished] = self.pad_idx  # This allows eos_idx not being overwritten to 0
+                logprobs = logprobs * unfinished.unsqueeze(1).float()
+                unfinished = unfinished * (it != self.eos_idx)
+            seq[:, t] = it
+            seqLogprobs[:, t] = logprobs
+            # quit loop if all sequences have finished
+            if unfinished.sum() == 0:
+                break
+            
+        # print("state", state)
+        # print('gt', targets)
         # print("seq", seq)
 
         # return seq, seqLogprobs
