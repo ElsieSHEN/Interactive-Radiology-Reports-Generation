@@ -81,7 +81,9 @@ class Tester(BaseTester):
             for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(tqdm(self.test_dataloader)):
                 images, reports_ids, reports_masks = images.to(self.device), reports_ids.to(
                     self.device), reports_masks.to(self.device)
-                output = self.model(images, reports_ids, mode='interactive') # whole text already generated here
+
+                output = self.model(images, reports_ids, mode='interactive')
+                
                 # print("final tokens:", output)
                 # reports = self.model.tokenizer.decode_batch(output.cpu().numpy())
                 tokens = output.cpu().numpy()[0]
@@ -90,6 +92,7 @@ class Tester(BaseTester):
                 reports = self.model.tokenizer.decode(tokens_clean)
                 # print("final report:", reports)
                 ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
+                # print('gt:', ground_truths)
                 
                 test_res.extend([reports])
                 test_gts.extend(ground_truths)
@@ -99,7 +102,6 @@ class Tester(BaseTester):
                     save_info[str(images_id[i])]['test'] = [reports][i]
                     save_info[str(images_id[i])]['gt'] = ground_truths[i]
 
-            # pickle.dump(save_info, open("baseline_generation.pkl", "wb"))
             # json.dump(save_info, open('autosentence_generation.json', 'w'), indent=4)
             json.dump(save_info, open('autolen7_generation.json', 'w'), indent=4)
             

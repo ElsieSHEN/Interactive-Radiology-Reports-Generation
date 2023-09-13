@@ -33,6 +33,7 @@ def compute_others(gts, res, mode, threshold):
            scores['rouge-l'] += rouge.compute(predictions=[res[i]], references=[gts[i]])['rougeL']/len(res)
         
     return scores
+
 def compute_bleu(gts, res, mode, threshold):
     bleu_scores = {'BLEU 1': 0,
                     'BLEU 2': 0,
