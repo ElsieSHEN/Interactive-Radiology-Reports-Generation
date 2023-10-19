@@ -95,10 +95,6 @@ class Tester(BaseTester):
                 ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
                 # print('gt:', ground_truths)
                 
-                # import tkinter.messagebox
-                # result=tkinter.messagebox.askokcancel ("Results", ground_truths)
-                # # 返回布尔值参数
-                # print(result)
                 win = Tk()
                 win.title("Results")
                 win.geometry('500x300')

@@ -297,7 +297,7 @@ class AttModel(CaptionModel):
             # interactive: modify according to the probability
             if self.mode == 'confidence':
                 interactive = Interactive(mode=self.mode, threshold=self.threshold) # interaction module
-                it, state = interactive.confidence_base(it, sampleLogprobs, state)
+                it, state, flag_edit = interactive.confidence_base(it, state, sampleLogprobs, self.auto_eval, targets, flag_edit)
             if self.mode == 'sentence':
                 interactive = Interactive(mode=self.mode, threshold=self.threshold)
                 it, state, flag_edit = interactive.sentence_base(it, state, self.auto_eval, targets, flag_edit)

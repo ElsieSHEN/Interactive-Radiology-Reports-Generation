@@ -14,7 +14,7 @@ def parse_agrs():
     parser = argparse.ArgumentParser()
 
     # Data input settings
-    parser.add_argument('--image_dir', type=str, default='data/mini_iu_xray/images/', help='the path to the directory containing the data.')
+    parser.add_argument('--image_dir', type=str, default='data/iu_xray/images/', help='the path to the directory containing the data.')
     parser.add_argument('--ann_path', type=str, default='data/mini_iu_xray/mini_annotation.json', help='the path to the directory containing the data.')
 
     # Data loader settings

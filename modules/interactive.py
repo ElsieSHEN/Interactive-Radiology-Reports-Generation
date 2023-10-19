@@ -3,6 +3,8 @@ import torch
 import json
 from tkinter import *
 from tkinter import simpledialog
+import nltk
+from nltk.corpus import stopwords
 
 from .tokenizers import Tokenizer
 
@@ -77,6 +79,7 @@ class Interactive(object):
     def __init__(self, mode, threshold):
         self.mode = mode
         self.threshold = threshold
+        self.stop_words = set(stopwords.words('english'))
         
     def sentence_base(self, it, state, auto_eval, targets, flag_edit):
         curr_it = it[0]
@@ -128,14 +131,15 @@ class Interactive(object):
                 # print('auto-edit', state)
         return it, state, flag_edit
     
-    def confidence_base(self, it, sampleLogprobs, state):
+    def confidence_base(self, it, state, sampleLogprobs, auto_eval, targets, flag_edit):
         next_prob = float(torch.exp(sampleLogprobs))
+        next_token = idx2token(int(it))
         
         if next_prob < self.threshold and (next_token not in self.stop_words):
             if auto_eval == False:
                 str1 = 'Confidence-based Interaction'
                 str2 = 'Sentence have been generated: ' + idx2token(state[0][0][0].numpy()) + \
-                    '\nNext token: ' + idx2token(int(it)) + ', Next token probability: ' + str(next_prob) + \
+                    '\nNext token: ' + next_token + ', Next token probability: ' + str(next_prob) + \
                     '\n\nEnter your new string: '
                 new_string = window(str1, str2).lower()
                 if len(new_string) == 0:
