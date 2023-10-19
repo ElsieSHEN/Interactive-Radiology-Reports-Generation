@@ -1,12 +1,12 @@
 .vscode/*
 data/
 Miniconda3-latest-MacOSX-arm64.sh
-generation.json
-generationb16.json
-try.ipynb
 __pycache__/
 **/.DS_Store
 run_model_interactive.py
 metrics_mine.py
 *.json
 *.pkl
+*.pth
+*.ipynb
+*.csv

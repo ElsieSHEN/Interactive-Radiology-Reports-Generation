@@ -14,8 +14,8 @@ def parse_agrs():
     parser = argparse.ArgumentParser()
 
     # Data input settings
-    parser.add_argument('--image_dir', type=str, default='data/iu_xray/images/', help='the path to the directory containing the data.')
-    parser.add_argument('--ann_path', type=str, default='data/iu_xray/annotation.json', help='the path to the directory containing the data.')
+    parser.add_argument('--image_dir', type=str, default='data/mini_iu_xray/images/', help='the path to the directory containing the data.')
+    parser.add_argument('--ann_path', type=str, default='data/mini_iu_xray/mini_annotation.json', help='the path to the directory containing the data.')
 
     # Data loader settings
     parser.add_argument('--dataset_name', type=str, default='iu_xray', choices=['iu_xray', 'mimic_cxr'], help='the dataset to be used.')
@@ -85,10 +85,11 @@ def parse_agrs():
     parser.add_argument('--resume', type=str, help='whether to resume the training from existing checkpoints.')
     parser.add_argument('--load', type=str, default='data/model_iu_xray.pth', help='whether to load a pre-trained model.')
     
+    # Interaction
     # mode, threshold = get_args() # use GUI to get args
-    parser.add_argument('--interactive_mode', type=str, default='length', help='the method used for interaction.')
-    parser.add_argument('--interactive_threshold', type=str, default=7, help='the method used for interaction.')
-    parser.add_argument('--auto_eval', type=bool, default=True , help='whether to use auto evaluation.')
+    parser.add_argument('--interactive_mode', type=str, default='confidence', help='the method used for interaction.')
+    parser.add_argument('--interactive_threshold', type=float, default=0.6, help='the method used for interaction.')
+    parser.add_argument('--auto_eval', type=bool, default=False , help='whether to use auto evaluation.')
     
 
     args = parser.parse_args()

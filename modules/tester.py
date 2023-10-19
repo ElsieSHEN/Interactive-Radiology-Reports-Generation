@@ -7,6 +7,7 @@ from tqdm import tqdm
 import cv2
 import torch
 from nltk.translate.bleu_score import sentence_bleu
+from tkinter import *
 
 from modules.utils import generate_heatmap
 from modules.metrics import compute_scores
@@ -94,6 +95,19 @@ class Tester(BaseTester):
                 ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
                 # print('gt:', ground_truths)
                 
+                # import tkinter.messagebox
+                # result=tkinter.messagebox.askokcancel ("Results", ground_truths)
+                # # 返回布尔值参数
+                # print(result)
+                win = Tk()
+                win.title("Results")
+                win.geometry('500x300')
+                text = Text(win, width=50, height=30, undo=True, autoseparators=True)
+                text.pack()
+                text.insert(INSERT, 'Generated report: '+reports)
+                text.insert(INSERT, '\n\nGround truth report: '+ground_truths[0])
+                win.mainloop()
+                                
                 test_res.extend([reports])
                 test_gts.extend(ground_truths)
                 
@@ -102,12 +116,12 @@ class Tester(BaseTester):
                     save_info[str(images_id[i])]['test'] = [reports][i]
                     save_info[str(images_id[i])]['gt'] = ground_truths[i]
 
-            # json.dump(save_info, open('autosentence_generation.json', 'w'), indent=4)
-            json.dump(save_info, open('autolen7_generation.json', 'w'), indent=4)
+            # json.dump(save_info, open('baseline_generation_ds.json', 'w'), indent=4)
+            # json.dump(save_info, open('autolen7_generation.json', 'w'), indent=4)
             
-            scores = compute_scores(test_gts, test_res, self.mode, self.threshold)
-            performance.update(scores)
-            print(scores)
+            # scores = compute_scores(test_gts, test_res, self.mode, self.threshold)
+            # performance.update(scores)
+            # print(scores)
             
         return performance
 
@@ -125,7 +139,7 @@ class Tester(BaseTester):
             for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(self.test_dataloader):
                 images, reports_ids, reports_masks = images.to(self.device), reports_ids.to(
                     self.device), reports_masks.to(self.device)
-                output = self.model(images, mode='sample')
+                output = self.model(images, mode='diverse_sample')
                 image = torch.clamp((images[0].cpu() * std + mean) * 255, 0, 255).int().cpu().numpy()
                 report = self.model.tokenizer.decode_batch(output.cpu().numpy())[0].split()
                 attention_weights = [layer.src_attn.attn.cpu().numpy()[:, :, :-1].mean(0).mean(0) for layer in
